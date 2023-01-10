@@ -1,0 +1,47 @@
+version: "3"
+
+networks:
+  gin-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${SUBNET}
+
+services:
+ gin-web:
+   build: ./
+   container_name: gin-web
+   restart: always
+   ports:
+      - 9876:9876
+   networks:
+      gin-network:
+        ipv4_address: ${WEB_HOST}           
+
+ gin-prometheus:
+    container_name: gin-prometheus
+    image: prom/prometheus:v2.28.1
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml 
+    restart: always
+    ports:
+      - 9099:9090
+    depends_on:
+      gin-web:
+        condition: service_started
+    networks:
+      gin-network:
+        ipv4_address: ${PROMETHEUS_HOST}        
+
+ gin-grafana:
+    container_name: gin-grafana
+    image: grafana/grafana:8.0.6
+    restart: always
+    ports:
+      - 3099:3000
+    depends_on:
+      gin-prometheus:
+        condition: service_started 
+    networks:
+      gin-network:
+        ipv4_address: ${GRAFANA_HOST}     
